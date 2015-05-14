@@ -3,6 +3,7 @@ from numpy import unique
 from scipy.cluster.hierarchy import linkage, dendrogram
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.decomposition import TruncatedSVD
+import nltk
 
 __author__ = 'mikhail'
 
@@ -57,30 +58,52 @@ X_train = vectorizer.fit_transform(X_train)
 from  gensim import corpora, models, similarities
 from gensim.parsing.preprocessing import STOPWORDS
 
-texts = [[word for word in document.lower().split() if word not in STOPWORDS]
-         for document in nyt_data]
-
-
-from collections import defaultdict
-
-
-frequency = defaultdict(int)
-for text in texts:
-    for token in text:
-        frequency[token] += 1
 
 from sets import Set
 f1 = Set()
 
-texts = [[token for token in text if frequency[token] > 1]
-         for text in texts]
+listChar = [",",".",";",":","!","?","-","_"]
+from nltk.stem.snowball import SnowballStemmer
+stemmer = SnowballStemmer("english")
 
-for text in texts:
-    for token in text:
-        f1.add(token)
+for l in nyt_data:
+    tokens = nltk.word_tokenize(l.decode('utf8', 'ignore'))
+    for token in tokens:
+        if token not in STOPWORDS:
+            if token not in listChar:
+                to=(stemmer.stem(token))
+                f1.add(to)
+
+
+
+
+
+
+
 
 for f in f1:
-    print(f)
+    print f
+
+
+
+
+
+
+
+
+
+
+
+sentence = """At eight running? on and, Thursday morning  Arthur didn't feel very good."""
+
+
+stemToken = []
+
+
+
+
+
+
 
 """
 lsa = TruncatedSVD(n_components=1250)
@@ -144,7 +167,7 @@ for i in range(0,9,1):
             if nyt_labels[c]== 'Radiation':
                 radiation[i] = radiation[i]+ 1
 
-            print nyt_labels[c], clusters[c]
+           # print nyt_labels[c], clusters[c]
 import matplotlib.pyplot as plt
 
 
