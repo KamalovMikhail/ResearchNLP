@@ -1,11 +1,6 @@
 __author__ = 'mikhail'
 
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
-# Conditional Random Field
-# This code is available under the MIT License.
-# (c)2010-2011 Nakatani Shuyo / Cybozu Labs Inc.
 
 import numpy
 

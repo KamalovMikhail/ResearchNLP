@@ -55,6 +55,14 @@ max_df=0.5, stop_words='english',
 
 X_train = vectorizer.fit_transform(X_train)
 
+x = X_train.toarray()
+for y in x:
+    s="0.0"
+    for a in y:
+        s= s+','+(str(a))
+    print s
+
+"""
 from  gensim import corpora, models, similarities
 from gensim.parsing.preprocessing import STOPWORDS
 
@@ -62,9 +70,9 @@ from gensim.parsing.preprocessing import STOPWORDS
 from sets import Set
 f1 = Set()
 
-listChar = [",",".",";",":","!","?","-","_"]
-from nltk.stem.snowball import SnowballStemmer
-stemmer = SnowballStemmer("english")
+listChar = [",",".",";",":","!","?","-","_","(",")"]
+from nltk import PorterStemmer
+stemmer = PorterStemmer()
 
 for l in nyt_data:
     tokens = nltk.word_tokenize(l.decode('utf8', 'ignore'))
@@ -75,33 +83,76 @@ for l in nyt_data:
                 f1.add(to)
 
 
+import math
+label = ['Drug','Device','Dietary Supplement','Procedure','Other','Behavioral','Biological','Genetic','Radiation']
+
+word = []
+measure =[]
+
+f = open('/home/mikhail/Documents/research/WordsMI.csv', 'wt')
+
+try:
+    writer = csv.writer(f)
+    for f in f1:
+
+
+        for la in label:
+
+            N10=1
+            N11=1
+            N01=1
+            N00=1
+            for l in range(0, len(nyt_data),1):
+
+
+                if (f in nyt_data[l].decode('utf8', 'ignore')) & (nyt_labels[l]==la):
+                    N11=N11+1
+                if (f not in nyt_data[l].decode('utf8', 'ignore')) & (nyt_labels[l]==la):
+                    N01=N01+1
+                if (f in nyt_data[l].decode('utf8', 'ignore') ) & (nyt_labels[l]!=la):
+                    N10=N10+1
+                if (f not in nyt_data[l].decode('utf8', 'ignore') ) & (nyt_labels[l]!=la):
+                    N00=N00+1
+
+            word.append(f)
+            fe =(len(nyt_data)*N11)/float((N10+N11)*(N11+N01))
+            print "param", len(nyt_data), N11,fe
+            print fe
+            ferst = N11/float(len(nyt_data))*math.log(fe,2)
+            print ferst
+
+            se = (len(nyt_data)*N01)/float((N01+N00)*(N11+N01))
+            print se
+            second = N01/float(len(nyt_data))*math.log(se,2)
+            print second
+            th=(len(nyt_data)*N10)/float((N11+N10)*(N10+N00))
+            print th
+
+            therd = N10/float(len(nyt_data))*math.log(th,2)
+            print therd
+            fo= (len(nyt_data)*N00)/float((N01+N00)*(N10+N00))
+            print(fo)
+            print "forth", len(nyt_data), N00, fo
+            forth = N00/float(len(nyt_data))*math.log(fo,2)
+            print forth
+            measure.append(ferst+second+therd+forth)
+            c= ferst+second+therd+forth
+            try:
+                writer.writerow((f,c,la))
+            except Exception,e:
+                print e
+                pass
+finally:
+    f.close()
 
 
 
+for w in range(0,len(word),1):
+    print word[w], measure[w]
 
 
 
-for f in f1:
-    print f
-
-
-
-
-
-
-
-
-
-
-
-sentence = """At eight running? on and, Thursday morning  Arthur didn't feel very good."""
-
-
-stemToken = []
-
-
-
-
+"""
 
 
 
@@ -167,9 +218,39 @@ for i in range(0,9,1):
             if nyt_labels[c]== 'Radiation':
                 radiation[i] = radiation[i]+ 1
 
+
+
+
            # print nyt_labels[c], clusters[c]
 import matplotlib.pyplot as plt
 
+SUP =0
+
+for i in range(0,9,1):
+    MAX=0
+    if MAX<drugs[i]:
+        MAX=drugs[i]
+    if MAX<device[i]:
+        MAX=device[i]
+    if MAX<diet[i]:
+        MAX=diet[i]
+    if MAX<proced[i]:
+        MAX=proced[i]
+    if MAX<other[i]:
+        MAX=other[i]
+    if MAX<behav[i]:
+        MAX=behav[i]
+    if MAX<bio[i]:
+        MAX=bio[i]
+    if MAX<gen[i]:
+        MAX=gen[i]
+    if MAX<radiation[i]:
+        MAX=radiation[i]
+    SUP= SUP+MAX
+
+purity = 1/3535.*(SUP)
+
+print(purity)
 
 xbins = []
 

@@ -7,40 +7,34 @@ from os.path import isfile, join
 __author__ = 'mikhail'
 
 
-##line = "Japanese encephalitis is associated with high rates of mortality and disabling sequelae. To date, no specific antiviral has proven to be of benefit for this condition. We attempted to determine the efficacy of oral ribavirin treatment for reducing early mortality among children with Japanese encephalitis in Uttar Pradesh, India.Children (age, 6 months to 15 years) who had been hospitalized with acute febrile encephalopathy (a &lt; or =2-week history of fever plus altered sensorium) were tested for the presence of immunoglobulin M antibodies to Japanese encephalitis virus with commercial immunoglobulin M capture enzyme-linked immunosorbent assay. Children with positive results were randomized to receive either ribavirin (10 mg/kg per day in 4 divided doses for 7 days) or placebo syrup through nasogastric tube or by mouth. The primary outcome was early mortality; secondary outcome measures were early (at hospital discharge; normal or nearly normal, independent functioning, dependent, vegetative state, or death) outcome, time to resolution of fever, time to resumption of oral feeding, duration of hospitalization, and late outcome (&gt; or =3 months after hospital discharge). The study was double-blind, and analysis was by intention to treat.A total of 153 patients were enrolled during a 3-year period; 70 patients received ribavirin, and 83 received placebo. There was no statistically significant difference between the 2 groups in the early mortality rate: 19 (27.1%) of 70 ribavirin recipients and 21 (25.3%) of 83 placebo recipients died (odds ratio, 1.10; 95% confidence interval, 0.5-2.4). No statistically significant differences in secondary outcome measures were found.For the dosage schedule used in our study, oral ribavirin has no effect in reducing early mortality associated with Japanese encephalitis.ClinicalTrials.gov identifier: NCT00216268"
-#words = line.split()
+from bs4 import BeautifulSoup
+from BeautifulSoup import BeautifulStoneSoup, Tag, NavigableString
+
+from nltk.tokenize import RegexpTokenizer
+import urllib2
 
 
 
+f = open('/home/mikhail/Documents/research/sampleWithNCT_ISRCTNArticles2.csv', 'wt')
+f1 = open('/home/mikhail/Documents/research/errorISRCTN2Articles.csv', 'wt')
+f2 = open('/home/mikhail/Documents/research/errorNCT2Articles.csv', 'wt')
 
+randomized = RegexpTokenizer("randomized")
+nonrandomized = RegexpTokenizer("non[-]{0,17}[ ]{0,1}randomized")
+sblind = RegexpTokenizer("single[-]{0,17}[ ]{0,1}blind")
+dblind = RegexpTokenizer("double[-]{0,17}[ ]{0,1}blind")
+open = RegexpTokenizer("open")
 
-
-#for word in words:
- #   if (word[0:3]=="NCT") & (len(word)==11):
-  #      print word
-line = 'sdfsdfd'+`1`+''
-print line
-
-
-gl = glob.glob('/home/mikhail/Desktop/medline/*.xml')
-print gl
-nyt = open('/home/mikhail/Documents/research/sampleNCTArticles.csv') # check the structure of this file!
-nyt_data = []
-
-csv_reader = csv.reader(nyt)
-sch=0
-for line in csv_reader:
-    nyt_data.append(line[1])
-nyt.close()
-
-
-#onlyfiles = [ f for f in listdir('/home/mikhail/Desktop/medline/') if isfile(join('/home/mikhail/Desktop/medline/',f)) ]
-f = open('/home/mikhail/Documents/research/sampleWithoutNCTArticles.csv', 'wt')
+countNCT=0
+countSCRT=0
 try:
 
         writer = csv.writer(f)
+        error_writer = csv.writer(f1)
+        error2_writer = csv.writer(f2)
         for i in range(1,406,1):
-            document = ElementTree.parse( '/home/mikhail/Documents/research/medline/part-'+`i`+'.xml' )
+            answer = []
+            document = ElementTree.parse( '/home/mikhail/Documents/research/DATA2015/medline/part-'+`i`+'.xml' )
             print i
             membership = document.getroot()
             users = document.find( 'document')
@@ -55,13 +49,122 @@ try:
                     if user.tag == 'title':
                         encoded_user = user.text.encode("utf8")
                     if user.tag == 'body':
-                        #print user.text
-                        encoded_str = user.text.encode("utf8")
-                    for id in nyt_data:
-                        if encode_id==id:
-                            sch=1
-            if sch==0:
-                writer.writerow((encode_id,encode_date,encoded_user,encoded_str,"undefined"))
+                        encoded_str = user.text.encode('ascii', 'ignore')
+                        qwe = RegexpTokenizer('ISRCTN[0-9]{8}')
+                        qwen = RegexpTokenizer('NCT[0-9]{8}')
+                        tokens = qwe.tokenize(encoded_str)
+                        tokens2 = qwen.tokenize(encoded_str)
+                        NCT=""
+                        ISRCTN=""
+                        if len(tokens2)>0:
+                            NCT = tokens2[0]
+
+                        if len(tokens)>0:
+                            ISRCTN=tokens[0]
+
+
+
+                        print(NCT)
+                        try:
+                                page = urllib2.urlopen('http://clinicaltrials.gov/show/'+NCT+'?resultsxml=true')
+                                document = ElementTree.parse(page)
+                                page_content = page.read()
+                                study_design = document.findtext('study_design')
+                                primary_study_design= document.findtext('study_type')
+                                group  = document.find('intervention/intervention_type')
+                                countNCT=countNCT+1
+
+                                ran = randomized.tokenize(study_design)
+                                nr = nonrandomized.tokenize(study_design)
+                                sb = sblind.tokenize(study_design)
+                                db = dblind.tokenize(study_design)
+                                op = open.tokenize(study_design)
+                                if len(nr) > 0 :
+                                    countNCT += 1
+                                    answer.append(nr[0].replace(" ","-"))
+                                elif len(ran) > 0:
+                                    countSCRT += 1
+                                    answer.append(ran[0].replace(" ","-"))
+                                if len(db) > 0:
+                                    countSCRT += 1
+                                    answer.append(db[0].replace(" ","-"))
+                                elif len(sb) > 0 :
+                                    countNCT += 1
+                                    answer.append(sb[0].replace(" ","-"))
+                                elif len(op) > 0:
+                                    answer.append(op[0].replace(" ","-"))
+
+                                if len(answer) == 2 :
+                                    writer.writerow((encode_id,encode_date,encoded_user,encoded_str.replace("\'","").replace("\"","").replace("\\","").replace("\/",""),NCT,primary_study_design,":    ".join(answer),group.text))
+
+                        except Exception,e:
+
+                                error2_writer.writerow((encode_id,encode_date,encoded_user,encoded_str,NCT))
+                                print e
+                                pass
+                        if len(ISRCTN)==14:
+
+                                print(ISRCTN)
+                                try:
+                                    response = urllib2.urlopen('http://www.isrctn.com/'+ISRCTN+'?q='+ISRCTN+'&filters=&sort=&offset=1&totalResults=1&page=1&pageSize=10&searchType=basic-search')
+                                    html_doc = response.read()
+                                    soup = BeautifulSoup(html_doc)
+                                    h3s = soup('h3')
+                                    for h in h3s:
+                                        if h.text == 'Intervention type':
+                                            subtype = h.next_sibling.next_sibling.text.strip()
+                                            if h.text == 'Study design':
+                                                study_design = h.next_sibling.next_sibling.text.strip()
+                                        if h.text == 'Primary study design':
+                                            primary_study_design =h.next_sibling.next_sibling.text.strip()
+
+                                    ran = randomized.tokenize(study_design)
+                                    nr = nonrandomized.tokenize(study_design)
+                                    sb = sblind.tokenize(study_design)
+                                    db = dblind.tokenize(study_design)
+                                    op = open.tokenize(study_design)
+                                    if len(nr) > 0 :
+                                        countNCT += 1
+                                        answer.append(nr[0].replace(" ","-"))
+                                    elif len(ran) > 0:
+                                        countSCRT += 1
+                                        answer.append(ran[0].replace(" ","-"))
+                                    if len(db) > 0:
+                                        countSCRT += 1
+                                        answer.append(db[0].replace(" ","-"))
+                                    elif len(sb) > 0 :
+                                        countNCT += 1
+                                        answer.append(sb[0].replace(" ","-"))
+                                    elif len(op) > 0:
+                                        answer.append(op[0].replace(" ","-"))
+
+                                    if len(answer) == 2 :
+                                        writer.writerow((encode_id,encode_date,encoded_user,encoded_str.replace("\'","").replace("\"","").replace("\\","").replace("\/",""),ISRCTN,primary_study_design,":    ".join(answer),subtype))
+                                    countSCRT = countSCRT+1
+
+                                except Exception,e:
+                                    
+                                    error_writer.writerow((encode_id,encode_date,encoded_user,encoded_str,ISRCTN))
+                                    print e
+                                    pass
+                        else:
+                             qwe = RegexpTokenizer('[ISRCTN]{6}')
+                             tokens =qwe.tokenize(encoded_str)
+                             qwen = RegexpTokenizer('[NCT]{3}\w+')
+                             tokens2 =qwen.tokenize(encoded_str)
+
+                             if len(tokens) > 0:
+                                 error_writer.writerow((encode_id,encode_date,encoded_user,encoded_str,tokens[0]))
+                             elif len(tokens2) > 0:
+                                 error2_writer.writerow((encode_id,encode_date,encoded_user,encoded_str,tokens2[0]))
+
+        print(countSCRT,countNCT)
+
+
+
+
 
 finally:
+    f1.close()
     f.close()
+    f2.close()

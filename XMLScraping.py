@@ -17,38 +17,36 @@ import urllib2
 from xml.etree import ElementTree
 
 
-nct =[]
-nyt = open('/home/mikhail/Documents/research/sampleNCTArticles.csv')
-csv_reader = csv.reader(nyt)
 
 
-f = open('/home/mikhail/Documents/research/NCTSLINK2015.csv', 'wt')
+# f = open('/home/mikhail/Documents/research/NCTSLINK2015.csv', 'wt')
+# try:
+
+#   writer = csv.writer(f)
+
 try:
-
-    writer = csv.writer(f)
-    for line in csv_reader:
-        try:
-            page = urllib2.urlopen('http://clinicaltrials.gov/show/'+line[0]+'?resultsxml=true')
-            print line[0]
-            document = ElementTree.parse(page)
-            page_content = page.read()
-            users = document.iterfind('clinical_study')
-            name =[]
-            type=[]
-           # for group in document.findall( 'intervention/intervention_name' ):
-            #    print(group.text)
-             #   name.append(group.text)
-
-            group = document.find( 'intervention/intervention_type' )
-
-            writer.writerow( (line[0],line[4],group.text) )
-        except Exception,e:
-            print e
-            pass
+    page = urllib2.urlopen('http://clinicaltrials.gov/show/NCT01343589?resultsxml=true')
+    document = ElementTree.parse(page)
+    page_content = page.read()
+    #users = document.iterfind('clinical_study')
+    name = []
+    users1 = document.findtext('study_design') #study_type
+    print(users1)
+    type = []
+    # for group in document.findall( 'intervention/intervention_name' ):
+    #    print(group.text)
+    #   name.append(group.text)
+    #print(users.text)
+    group = document.find('intervention/intervention_type')
+    print(group.text)
+    # writer.writerow( (line[0],line[4],group.text) )
+except Exception, e:
+    print e
+    pass
 
 
 
 
 
-finally:
-    f.close()
+    #finally:
+    #  f.close()
